@@ -1,0 +1,7 @@
+{
+  "name": "Bee Study",
+  "description": "An intelligent study aid that transforms documents and images into personalized notes, flashcards, quizzes, and an interactive learning experience with a virtual tutor.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
