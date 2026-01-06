@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { GoogleGenAI, Modality } from "@google/genai";
 import katex from 'katex';
 import pptxgen from 'pptxgenjs';
-import { ViewType, StudyMaterial, ChatMessage, StagedFile, StudyConfig, StudyGoal, Difficulty, StudyFormula, Slide, SlideDeck } from './types';
+import { ViewType, StudyMaterial, ChatMessage, StagedFile, StudyConfig, StudyGoal, Difficulty, StudyFormula, Slide, SlideDeck, VocabularyTerm } from './types';
 import { analyzeMaterial, chatWithTutor, generateSlideOutline, generateSingleSlide } from './services/geminiService';
 import FlashcardSet from './components/FlashcardSet';
 import Quiz from './components/Quiz';
@@ -52,7 +52,7 @@ const SplashScreen: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
         <div className="absolute inset-0 bg-yellow-400/20 blur-[60px] rounded-full -z-10 animate-pulse"></div>
       </div>
       <div className="mt-6 md:mt-8 text-center space-y-4 animate-splash-in [animation-delay:0.3s]">
-        <h1 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tighter uppercase">Bee Study</h1>
+        <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tighter uppercase">Bee Study</h1>
         <div className="flex items-center gap-2 justify-center">
           <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-bounce"></div>
           <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-bounce [animation-delay:0.2s]"></div>
@@ -286,7 +286,7 @@ const App: React.FC = () => {
   const confirmReset = () => {
     stopReading();
     setMaterial(null); setStagedFiles([]); setChatHistory([]); setCurrentLessonIdx(0); setView(ViewType.HOME); setShowResetConfirm(false);
-    setSlides([]); setSlideDecks([]); setIsGeneratingSlides(false);
+    setSlides([]); setSlideDecks([]); setIsGeneratingSlides(false); setIsFormulaSidebarOpen(false);
   };
 
   const startAnalysis = async () => {
@@ -371,8 +371,8 @@ const App: React.FC = () => {
     if (loading) {
       return (
         <div className="flex flex-col items-center justify-center min-h-[400px] h-full w-full animate-fade-in px-6">
-          <div className="relative mb-12">
-            <BeeIcon className="w-20 h-20 md:w-28 md:h-28 text-yellow-400 animate-bounce" />
+          <div className="relative mb-8">
+            <BeeIcon className="w-20 h-20 md:w-24 md:h-24 text-yellow-400 animate-bounce" />
             <div className="absolute inset-0 bg-yellow-400/20 blur-[60px] rounded-full -z-10 animate-pulse"></div>
           </div>
           <h2 className="text-xl md:text-3xl font-black text-gray-900 mt-6 uppercase tracking-tighter">Synthesizing...</h2>
@@ -394,7 +394,7 @@ const App: React.FC = () => {
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-yellow-50 text-yellow-700 rounded-lg border border-yellow-100/50">
                 <span className="text-[8px] font-black uppercase tracking-[0.2em]">Next-Gen Learning</span>
               </div>
-              <h1 className="text-3xl md:text-5xl lg:text-7xl font-black text-gray-900 leading-tight tracking-tighter">
+              <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-gray-900 leading-tight tracking-tighter">
                 Smart Study, <br /><span className="text-yellow-400 italic">Sweetened.</span>
               </h1>
               <p className="text-lg md:text-xl text-gray-500 font-medium leading-relaxed max-w-xl">
@@ -415,7 +415,7 @@ const App: React.FC = () => {
                     <div key={f.id} className="flex items-center gap-3 bg-gray-50/50 p-2 rounded-lg border border-gray-100">
                        <i className={f.file.type.includes('pdf') ? 'fa-solid fa-file-pdf text-red-500' : 'fa-solid fa-file-image text-blue-500'}></i>
                        <p className="flex-1 text-[10px] font-black truncate">{f.file.name}</p>
-                       <button onClick={() => removeFile(f.id)} className="w-6 h-6 rounded-full hover:bg-red-50 text-gray-300 hover:text-red-500"><i className="fa-solid fa-xmark text-[10px]"></i></button>
+                       <button onClick={() => removeFile(f.id)} className="w-6 h-6 rounded-full hover:bg-red-50 text-gray-300 hover:text-red-500 transition-all flex items-center justify-center"><i className="fa-solid fa-xmark text-[10px]"></i></button>
                     </div>
                   ))}
                 </div>
@@ -493,7 +493,7 @@ const App: React.FC = () => {
                     <div className="flex items-center gap-3 mb-6 shrink-0"><div className="px-3 py-1 bg-yellow-400 text-white rounded-lg text-[9px] font-black uppercase">Slide {currentSlideIdx + 1} / {slides.length}</div><div className="h-[1px] flex-1 bg-gray-100"></div></div>
                     {currentSlide ? (
                       <div className="flex-1 flex flex-col justify-center animate-fade-in overflow-hidden">
-                          <h2 className={`font-black text-gray-900 tracking-tighter leading-tight shrink-0 mb-8 lg:mb-12 ${isFullscreen ? 'text-4xl md:text-8xl' : 'text-2xl md:text-5xl lg:text-6xl'}`}><MathRenderer text={currentSlide.title} /></h2>
+                          <h2 className={`font-black text-gray-900 tracking-tighter leading-tight shrink-0 mb-8 lg:mb-12 ${isFullscreen ? 'text-4xl md:text-8xl' : 'text-2xl md:text-4xl lg:text-5xl'}`}><MathRenderer text={currentSlide.title} /></h2>
                           <div className={`flex-1 overflow-y-auto custom-scrollbar pr-4 flex flex-col justify-center space-y-6 lg:space-y-12 ${isFullscreen ? 'text-xl md:text-4xl' : 'text-base md:text-xl lg:text-2xl'}`}>{currentSlide.bullets.map((bullet, i) => (<div key={i} className="flex gap-4 items-start animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}><div className={`rounded-full bg-yellow-400 shrink-0 shadow-sm ${isFullscreen ? 'w-5 h-5 mt-4' : 'w-2.5 h-2.5 mt-3'}`}></div><div className="font-medium text-gray-700 leading-relaxed"><MathRenderer text={bullet} /></div></div>))}</div>
                           {currentSlide.visualPrompt && (<div className="mt-8 lg:mt-12 pt-6 border-t border-gray-50 flex items-center gap-3 shrink-0"><i className="fa-solid fa-wand-magic-sparkles text-yellow-500 text-sm"></i><p className="text-[9px] lg:text-[11px] text-gray-400 font-medium italic">Visual Concept: {currentSlide.visualPrompt}</p></div>)}
                       </div>
@@ -528,14 +528,14 @@ const App: React.FC = () => {
       const lessonWords = lesson.content.split(/\s+/);
       const progressPercent = Math.round(((currentLessonIdx + 1) / material.curriculum.length) * 100);
       return (
-        <div className="flex flex-col lg:flex-row h-screen lg:h-[calc(100vh-80px)] overflow-hidden animate-fade-in bg-[#fafafa]">
+        <div className="flex flex-col lg:flex-row h-screen lg:h-[calc(100vh-80px)] overflow-hidden animate-fade-in bg-[#fcfcfc]">
           {/* Main Learning Content */}
           <div className="flex-1 flex flex-col p-4 lg:p-8 overflow-hidden relative">
-             <div className="flex items-center justify-between mb-8 px-2">
+             <div className="flex items-center justify-between mb-6 px-2">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-gray-900 text-white flex items-center justify-center font-black text-lg shadow-xl"><span className="text-yellow-400">L</span>{currentLessonIdx+1}</div>
                   <div className="min-w-0">
-                    <h2 className="text-xl md:text-2xl font-black text-gray-900 tracking-tighter truncate uppercase leading-tight">{lesson.title}</h2>
+                    <h2 className="text-xl md:text-3xl font-black text-gray-900 tracking-tighter truncate uppercase leading-tight">{lesson.title}</h2>
                     <div className="flex items-center gap-2 mt-0.5">
                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Progress: {progressPercent}%</span>
                        <div className="w-16 h-1 bg-gray-100 rounded-full overflow-hidden">
@@ -544,19 +544,22 @@ const App: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl shadow-sm border">
-                  <button onClick={() => { stopReading(); setCurrentLessonIdx(Math.max(0, currentLessonIdx - 1)); }} className="w-8 h-8 rounded-lg hover:bg-yellow-50 text-gray-400" disabled={currentLessonIdx === 0}><i className="fa-solid fa-chevron-left text-[10px]"></i></button>
-                  <button onClick={() => { stopReading(); setCurrentLessonIdx(Math.min(material.curriculum.length - 1, currentLessonIdx + 1)); }} className="w-8 h-8 rounded-lg hover:bg-yellow-50 text-gray-400" disabled={currentLessonIdx === material.curriculum.length - 1}><i className="fa-solid fa-chevron-right text-[10px]"></i></button>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => setIsFormulaSidebarOpen(!isFormulaSidebarOpen)} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${isFormulaSidebarOpen ? 'bg-yellow-400 text-white' : 'bg-gray-100 text-gray-500 hover:bg-yellow-50 hover:text-yellow-600'}`}><i className="fa-solid fa-flask-vial mr-2"></i> Formula Vault</button>
+                  <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl shadow-sm border">
+                    <button onClick={() => { stopReading(); setCurrentLessonIdx(Math.max(0, currentLessonIdx - 1)); }} className="w-8 h-8 rounded-lg hover:bg-yellow-50 text-gray-400" disabled={currentLessonIdx === 0}><i className="fa-solid fa-chevron-left text-[10px]"></i></button>
+                    <button onClick={() => { stopReading(); setCurrentLessonIdx(Math.min(material.curriculum.length - 1, currentLessonIdx + 1)); }} className="w-8 h-8 rounded-lg hover:bg-yellow-50 text-gray-400" disabled={currentLessonIdx === material.curriculum.length - 1}><i className="fa-solid fa-chevron-right text-[10px]"></i></button>
+                  </div>
                 </div>
              </div>
 
              <div className="flex-1 flex flex-col xl:flex-row gap-6 overflow-hidden">
-                <div className="flex-1 bg-white rounded-[32px] shadow-sm border p-6 md:p-12 lg:p-16 overflow-y-auto custom-scrollbar relative">
+                <div className="flex-1 bg-white rounded-[32px] shadow-sm border p-6 md:p-12 lg:p-14 overflow-y-auto custom-scrollbar relative">
                     <div className="max-w-4xl mx-auto pb-20">
                       <div className="flex items-center justify-between mb-8 border-b border-gray-50 pb-6">
                          <div className="space-y-1">
                            <span className="text-[8px] font-black uppercase text-yellow-600 tracking-widest">Educational Narrative</span>
-                           <h4 className="text-xs font-bold text-gray-400 uppercase">Core Instructional Text</h4>
+                           <h4 className="text-xs font-bold text-gray-400 uppercase">Core Lesson Passage</h4>
                          </div>
                          <div className="flex items-center gap-2">
                             {isReading || isPaused ? (
@@ -571,7 +574,7 @@ const App: React.FC = () => {
                       </div>
 
                       <div className="prose prose-sm md:prose-base max-w-none">
-                        <div className="flex items-baseline gap-x-2 flex-wrap text-base md:text-lg text-gray-700 leading-[2] font-medium selection:bg-yellow-100">
+                        <div className="flex items-baseline gap-x-2 flex-wrap text-base md:text-lg text-gray-700 leading-[1.8] font-medium selection:bg-yellow-100">
                           {lessonWords.map((word, i) => (
                             <span key={i} className={`transition-all duration-200 inline-block px-1 rounded-md ${i === readingProgress && isReading ? 'reading-highlight' : ''}`}>
                               <MathRenderer text={word} />
@@ -584,15 +587,15 @@ const App: React.FC = () => {
                           <div className="p-6 bg-yellow-50/50 rounded-[24px] border border-yellow-100 flex gap-4 items-center group transition-all">
                              <div className="w-10 h-10 bg-yellow-400 rounded-xl flex items-center justify-center text-lg text-white shadow-md"><i className="fa-solid fa-lightbulb"></i></div>
                              <div className="space-y-0.5">
-                               <h4 className="font-black text-yellow-600 text-[8px] uppercase tracking-widest">Master Concept</h4>
+                               <h4 className="font-black text-yellow-600 text-[8px] uppercase tracking-widest">Buzz's Insight</h4>
                                <p className="text-sm font-black text-gray-800 leading-tight italic">"{lesson.keyTakeaway}"</p>
                              </div>
                           </div>
                           <div className="p-6 bg-gray-50 rounded-[24px] border border-gray-100 flex gap-4 items-center group transition-all">
-                             <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-lg text-white shadow-md"><i className="fa-solid fa-check-double"></i></div>
+                             <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-lg text-white shadow-md"><i className="fa-solid fa-bolt"></i></div>
                              <div className="space-y-0.5">
-                               <h4 className="font-black text-gray-400 text-[8px] uppercase tracking-widest">Key Objective</h4>
-                               <p className="text-sm font-black text-gray-600 leading-tight">Apply this module's logic to practical testing.</p>
+                               <h4 className="font-black text-gray-400 text-[8px] uppercase tracking-widest">Active Step</h4>
+                               <p className="text-sm font-black text-gray-600 leading-tight">Query Buzz to clarify specific logic points.</p>
                              </div>
                           </div>
                       </div>
@@ -600,9 +603,9 @@ const App: React.FC = () => {
                 </div>
 
                 <div className="w-full xl:w-[320px] flex flex-col gap-6">
-                   {/* Lesson Metadata Panel */}
+                   {/* Lesson Objectives */}
                    <div className="bg-white rounded-[32px] shadow-sm border border-gray-100 p-6 flex flex-col">
-                      <h4 className="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-4 flex items-center gap-2"><i className="fa-solid fa-list-check text-yellow-500"></i> Lesson Goals</h4>
+                      <h4 className="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-4 flex items-center gap-2"><i className="fa-solid fa-list-check text-yellow-500"></i> Learning Path</h4>
                       <div className="space-y-3">
                          {lesson.objectives.map((obj, i) => (
                            <div key={i} className="flex gap-3 items-start">
@@ -613,7 +616,7 @@ const App: React.FC = () => {
                       </div>
                    </div>
 
-                   {/* Glossary Mini Panel */}
+                   {/* Glossary Panel */}
                    <div className="bg-white rounded-[32px] shadow-sm border border-gray-100 p-6 flex flex-col flex-1 overflow-hidden">
                       <h4 className="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-4 flex items-center gap-2"><i className="fa-solid fa-spell-check text-yellow-500"></i> Glossary</h4>
                       <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4">
@@ -680,26 +683,7 @@ const App: React.FC = () => {
 
     return (
       <div className="flex flex-col lg:flex-row h-[calc(100vh-80px)] overflow-hidden">
-        {/* Formula Vault Sidebar - ALWAYS ACCESSIBLE FROM NOTES */}
-        {view === ViewType.NOTES && material.formulas.length > 0 && (
-          <div className={`transition-all duration-500 bg-white border-r border-gray-100 flex flex-col shadow-sm relative ${isFormulaSidebarOpen ? 'w-full lg:w-[320px]' : 'w-0 overflow-hidden'}`}>
-             <div className="p-4 border-b flex items-center justify-between">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-900">Formula Vault</h4>
-                <button onClick={() => setIsFormulaSidebarOpen(false)} className="text-gray-300"><i className="fa-solid fa-xmark text-xs"></i></button>
-             </div>
-             <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-gray-50/30">
-                {material.formulas.map((f, i) => (
-                  <div key={i} className="p-4 bg-white rounded-2xl border space-y-3 shadow-sm hover:shadow-md transition-all">
-                     <p className="text-[9px] font-black uppercase text-yellow-600">{f.name}</p>
-                     <MathRenderer text={f.formula} className="text-center bg-gray-50/50 py-4 rounded-xl" />
-                     <MathRenderer text={f.parameters} className="text-[9px] text-gray-500 font-medium leading-relaxed" />
-                  </div>
-                ))}
-             </div>
-          </div>
-        )}
-
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12 custom-scrollbar relative">
           {view === ViewType.NOTES && (
             <div className="max-w-4xl mx-auto mb-8 animate-fade-in">
                <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100">
@@ -725,15 +709,21 @@ const App: React.FC = () => {
           </div>
 
           {view === ViewType.NOTES && (
-            <div className="grid gap-4 max-w-4xl mx-auto animate-fade-in">
-              {material.notes.map((note, idx) => (
-                <div key={idx} className="flex gap-4 p-6 bg-white border rounded-[28px] shadow-sm hover:shadow-md transition-all group">
-                  <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center shrink-0 group-hover:bg-yellow-400 transition-colors">
-                    <span className="text-sm font-black text-yellow-400 group-hover:text-white">{String(idx+1).padStart(2,'0')}</span>
+            <div className="max-w-4xl mx-auto animate-fade-in">
+              <div className="flex justify-between items-center mb-6">
+                 <h2 className="text-xl font-black text-gray-900 uppercase tracking-tighter">Core Notes</h2>
+                 <button onClick={() => setIsFormulaSidebarOpen(!isFormulaSidebarOpen)} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${isFormulaSidebarOpen ? 'bg-yellow-400 text-white' : 'bg-white text-gray-500 border border-gray-100 shadow-sm'}`}><i className="fa-solid fa-flask-vial mr-2"></i> Toggle Formula Vault</button>
+              </div>
+              <div className="grid gap-4">
+                {material.notes.map((note, idx) => (
+                  <div key={idx} className="flex gap-4 p-6 bg-white border rounded-[28px] shadow-sm hover:shadow-md transition-all group">
+                    <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center shrink-0 group-hover:bg-yellow-400 transition-colors">
+                      <span className="text-sm font-black text-yellow-400 group-hover:text-white">{String(idx+1).padStart(2,'0')}</span>
+                    </div>
+                    <div className="text-base text-gray-700 font-bold leading-relaxed flex-1"><MathRenderer text={note} /></div>
                   </div>
-                  <div className="text-base text-gray-700 font-bold leading-relaxed flex-1"><MathRenderer text={note} /></div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
           {view === ViewType.FLASHCARDS && <FlashcardSet cards={material.flashcards} />}
@@ -744,7 +734,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#fdfdfd] text-gray-900 selection:bg-yellow-100 font-['Ubuntu']">
+    <div className="min-h-screen flex flex-col bg-[#fdfdfd] text-gray-900 selection:bg-yellow-100 font-['Ubuntu'] overflow-hidden">
       {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
       <nav className="sticky top-0 z-[100] h-14 md:h-16 bg-white/70 backdrop-blur-2xl border-b border-gray-100/50">
         <div className="max-w-7xl mx-auto px-4 md:px-8 h-full flex items-center justify-between">
@@ -774,7 +764,36 @@ const App: React.FC = () => {
           </div>
         </div>
       </nav>
-      <main className={`flex-1 overflow-hidden transition-all duration-700 ${showSplash ? 'blur-2xl opacity-0 scale-95' : 'blur-0 opacity-100 scale-100'}`}>{renderContent()}</main>
+      
+      <main className={`flex-1 flex overflow-hidden transition-all duration-700 ${showSplash ? 'blur-2xl opacity-0 scale-95' : 'blur-0 opacity-100 scale-100'}`}>
+        {/* Universal Formula Vault Drawer */}
+        {material && material.formulas.length > 0 && (
+          <div className={`fixed lg:relative z-[90] h-[calc(100vh-64px)] bg-white border-r border-gray-100 flex flex-col shadow-sm transition-all duration-500 ease-in-out ${isFormulaSidebarOpen ? 'w-full md:w-[320px] left-0' : 'w-0 -left-[320px] lg:left-0 overflow-hidden'}`}>
+             <div className="p-4 border-b flex items-center justify-between bg-white sticky top-0 z-10">
+                <div className="flex items-center gap-2">
+                   <i className="fa-solid fa-flask-vial text-yellow-400"></i>
+                   <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-900">Formula Vault</h4>
+                </div>
+                <button onClick={() => setIsFormulaSidebarOpen(false)} className="text-gray-300 hover:text-gray-900 transition-colors"><i className="fa-solid fa-xmark text-sm"></i></button>
+             </div>
+             <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-gray-50/20">
+                {material.formulas.map((f, i) => (
+                  <div key={i} className="p-4 bg-white rounded-2xl border border-gray-100 space-y-3 shadow-sm hover:shadow-md transition-all">
+                     <p className="text-[9px] font-black uppercase text-yellow-600 tracking-wider">{f.name}</p>
+                     <div className="p-3 bg-gray-50/50 rounded-xl">
+                       <MathRenderer text={f.formula} className="text-center" />
+                     </div>
+                     <MathRenderer text={f.parameters} className="text-[9px] text-gray-500 font-medium leading-relaxed" />
+                  </div>
+                ))}
+             </div>
+          </div>
+        )}
+        
+        <div className="flex-1 overflow-hidden">
+           {renderContent()}
+        </div>
+      </main>
       
       {showAddModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-gray-900/60 backdrop-blur-xl animate-fade-in">
